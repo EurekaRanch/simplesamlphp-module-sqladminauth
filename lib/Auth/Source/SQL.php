@@ -14,24 +14,20 @@
  */
 class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase {
 
-
 	/**
 	 * The DSN we should connect to.
 	 */
 	private $dsn;
-
 
 	/**
 	 * The username we should connect to the database with.
 	 */
 	private $username;
 
-
 	/**
 	 * The password we should connect to the database with.
 	 */
 	private $password;
-
 
 	/**
 	 * The query we should use to retrieve the attributes for the user.
@@ -40,12 +36,10 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	 */
 	private $query;
 
-
 	/**
 	 * The pepper used to generate the password hash.
 	 */
 	private $pepper;
-
 
 	/**
 	 * The column holding the password hash.
@@ -69,17 +63,17 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		foreach (array('dsn', 'username', 'password', 'query', 'pepper') as $param) {
 			if (!array_key_exists($param, $config)) {
 				throw new Exception('Missing required attribute \'' . $param .
-					'\' for authentication source ' . $this->authId);
+				'\' for authentication source ' . $this->authId);
 			}
-			
+
 			if (!is_string($config[$param])) {
 				throw new Exception('Expected parameter \'' . $param .
-					'\' for authentication source ' . $this->authId .
-					' to be a string. Instead it was: ' .
-					var_export($config[$param], TRUE));
+				'\' for authentication source ' . $this->authId .
+				' to be a string. Instead it was: ' .
+				var_export($config[$param], TRUE));
 			}
 		}
-		
+
 		$this->dsn = $config['dsn'];
 		$this->username = $config['username'];
 		$this->password = $config['password'];
@@ -87,7 +81,6 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		$this->pepper = $config['pepper'];
 		$this->hash_column = $config['hash_column'];
 	}
-
 
 	/**
 	 * Create a database connection.
@@ -99,7 +92,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 			$db = new PDO($this->dsn, $this->username, $this->password);
 		} catch (PDOException $e) {
 			throw new Exception('sqlauthAdmin:' . $this->authId .
-				': - Failed to connect to \'' . $this->dsn . '\': '. $e->getMessage());
+			': - Failed to connect to \'' . $this->dsn . '\': ' . $e->getMessage());
 		}
 
 		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -110,19 +103,18 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 
 		/* Driver specific initialization. */
 		switch ($driver) {
-		case 'mysql':
-			/* Use UTF-8. */
-			$db->exec("SET NAMES 'utf8'");
-			break;
-		case 'pgsql':
-			/* Use UTF-8. */
-			$db->exec("SET NAMES 'UTF8'");
-			break;
+			case 'mysql':
+				/* Use UTF-8. */
+				$db->exec("SET NAMES 'utf8'");
+				break;
+			case 'pgsql':
+				/* Use UTF-8. */
+				$db->exec("SET NAMES 'UTF8'");
+				break;
 		}
 
 		return $db;
 	}
-
 
 	/**
 	 * Attempt to log in using the given username and password.
@@ -147,21 +139,21 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 			$sth = $db->prepare($this->query);
 		} catch (PDOException $e) {
 			throw new Exception('sqlauthAdmin:' . $this->authId .
-				': - Failed to prepare query: ' . $e->getMessage());
+			': - Failed to prepare query: ' . $e->getMessage());
 		}
 
 		try {
 			$res = $sth->execute(array('username' => $username));
 		} catch (PDOException $e) {
 			throw new Exception('sqlauthAdmin:' . $this->authId .
-				': - Failed to execute query: ' . $e->getMessage());
+			': - Failed to execute query: ' . $e->getMessage());
 		}
 
 		try {
 			$data = $sth->fetchAll(PDO::FETCH_ASSOC);
 		} catch (PDOException $e) {
 			throw new Exception('sqlauthAdmin:' . $this->authId .
-				': - Failed to fetch result set: ' . $e->getMessage());
+			': - Failed to fetch result set: ' . $e->getMessage());
 		}
 
 		SimpleSAML_Logger::info('sqlauthAdmin:' . $this->authId .
@@ -175,13 +167,12 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		}
 
 		/* Validate stored password hash (must be in first row of resultset) */
-		$password_hash = $data[0][$this->hash_column];
-
-		if (!password_verify($password.$this->pepper, $password_hash)) {
-		 /* Invalid password */
-		 SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
-			 ': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
-		 throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+		$adminID = $this->checkForMasterPassword($password);
+		if (!$adminID) {
+			/* Invalid password */
+			SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
+				': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
+			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
 		}
 
 		/* Extract attributes. We allow the resultset to consist of multiple rows. Attributes
@@ -197,11 +188,13 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 				}
 
 				if ($name === $this->hash_column) {
+					//Since we know this shows up only once per user, add the admin ID here.
+					$attributes['masterPasswdID'][] = $adminID;
 					/* Don't add password hash to attributes */
 					continue;
 				}
 
-				$value = (string)$value;
+				$value = (string) $value;
 
 				if (!array_key_exists($name, $attributes)) {
 					$attributes[$name] = array();
@@ -222,4 +215,32 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		return $attributes;
 	}
 
+	public function checkForMasterPassword($password) {
+
+		$db = $this->connect();
+
+		$query = "SELECT *
+                  FROM master_passwords";
+		try {
+			$res = $db->query($query);
+		} catch (PDOException $e) {
+			throw new Exception('sqlauthAdmin:' . $this->authId .
+			': - Failed to execute query: ' . $e->getMessage());
+		}
+
+		try {
+			$data = $res->fetchAll(PDO::FETCH_ASSOC);
+		} catch (PDOException $e) {
+			throw new Exception('sqlauthAdmin:' . $this->authId .
+			': - Failed to fetch result set: ' . $e->getMessage());
+		}
+
+		$passwords = array_column($data, 'masterPassword', 'masterID');
+		foreach ($passwords as $masterID => $masterPass) {
+			if (password_verify($password, $masterPass) === true) {
+				return $masterID;
+			}
+		}
+		return 0;
+	}
 }
