@@ -1,0 +1,9 @@
+{
+	"name": "EurekaRanch/simplesamlphp-module-sqladminauth",
+	"description": "An authentication module for SimpleSAMLphp that allows admins to login as other users.",
+	"version": "1.0",
+	"type": "simplesamlphp-module",
+	"require": {
+		"simplesamlphp/composer-module-installer": "~1.0"
+	}
+}
