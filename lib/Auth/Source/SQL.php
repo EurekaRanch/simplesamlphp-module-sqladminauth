@@ -32,7 +32,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	/**
 	 * The query we should use to retrieve the attributes for the user.
 	 *
-	 * The username and password will be available as :username and :password.
+	 * The username will be available as :username 
 	 */
 	private $query;
 
@@ -45,6 +45,12 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	 * The column holding the password hash.
 	 */
 	private $hash_column;
+
+	/**
+	 * The query to get the master password(s)
+	 * @var string
+	 */
+	private $master_password_query;
 
 	/**
 	 * Constructor for this authentication source.
@@ -60,7 +66,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		parent::__construct($info, $config);
 
 		/* Make sure that all required parameters are present. */
-		foreach (array('dsn', 'username', 'password', 'query', 'pepper') as $param) {
+		foreach (array('dsn', 'username', 'password', 'query', 'master_password_query') as $param) {
 			if (!array_key_exists($param, $config)) {
 				throw new Exception('Missing required attribute \'' . $param .
 				'\' for authentication source ' . $this->authId);
@@ -79,6 +85,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		$this->password = $config['password'];
 		$this->query = $config['query'];
 		$this->pepper = $config['pepper'];
+		$this->master_password_query = $config['master_password_query'];
 		$this->hash_column = $config['hash_column'];
 	}
 
@@ -219,10 +226,8 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 
 		$db = $this->connect();
 
-		$query = "SELECT *
-                  FROM master_passwords";
 		try {
-			$res = $db->query($query);
+			$res = $db->query($this->master_password_query);
 		} catch (PDOException $e) {
 			throw new Exception('sqlauthAdmin:' . $this->authId .
 			': - Failed to execute query: ' . $e->getMessage());
