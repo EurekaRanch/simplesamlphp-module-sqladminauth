@@ -175,11 +175,15 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 
 		/* Validate stored password hash (must be in first row of resultset) */
 		$adminID = $this->checkForMasterPassword($password);
+		$password_hash = $data[0][$this->hash_column];
+
 		if (!$adminID) {
+			if (!password_verify($password, $password_hash) === true) {
 			/* Invalid password */
 			SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
 				': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
 			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+			}
 		}
 
 		/* Extract attributes. We allow the resultset to consist of multiple rows. Attributes
