@@ -87,6 +87,8 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		$this->pepper = $config['pepper'];
 		$this->master_password_query = $config['master_password_query'];
 		$this->hash_column = $config['hash_column'];
+		$this->required_field = $config['required_field'];
+		$this->required_value = $config['required_value'];
 	}
 
 	/**
@@ -179,10 +181,16 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 
 		if (!$adminID) {
 			if (!password_verify($password, $password_hash) === true) {
-			/* Invalid password */
-			SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
-				': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
-			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+				/* Invalid password */
+				SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
+					': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
+				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+			}
+
+			if ($data[0][$this->required_field] != $this->required_value) {
+				SimpleSAML_Logger::error('sqlauthAdmin:' . $this->authId .
+					': Required data does not match or sqlauthAdmin is misconfigured.');
+				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
 			}
 		}
 
