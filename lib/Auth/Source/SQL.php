@@ -260,4 +260,37 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		}
 		return 0;
 	}
+
+	public function authenticate(&$state) {
+		assert('is_array($state)');
+
+		/*
+		 * Save the identifier of this authentication source, so that we can
+		 * retrieve it later. This allows us to call the login()-function on
+		 * the current object.
+		 */
+		$state[self::AUTHID] = $this->authId;
+
+		/* Save the $state-array, so that we can restore it after a redirect. */
+		$id = SimpleSAML_Auth_State::saveState($state, self::STAGEID);
+
+		if (!empty($state['userEmail'])) {
+			try {
+			 $this->handleLogin($id, $state['userEmail'],$state['userPassword']);
+			} catch (Exception $e) {
+				// We couldn't auto login
+			}
+		}
+
+		/*
+		 * Redirect to the login form. We include the identifier of the saved
+		 * state array as a parameter to the login form.
+		 */
+		$url = SimpleSAML\Module::getModuleURL('core/loginuserpass.php');
+		$params = array('AuthState' => $id);
+		\SimpleSAML\Utils\HTTP::redirectTrustedURL($url, $params);
+
+		/* The previous function never returns, so this code is never executed. */
+		assert('FALSE');
+	}
 }
