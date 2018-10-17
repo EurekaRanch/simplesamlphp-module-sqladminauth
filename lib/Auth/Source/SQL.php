@@ -139,8 +139,8 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	 * @return array	Associative array with the users attributes.
 	 */
 	protected function login($username, $password) {
-		assert('is_string($username)');
-		assert('is_string($password)');
+		assert(is_string($username));
+		assert(is_string($password));
 
 		$db = $this->connect();
 
@@ -262,7 +262,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	}
 
 	public function authenticate(&$state) {
-		assert('is_array($state)');
+		assert(is_array($state));
 
 		/*
 		 * Save the identifier of this authentication source, so that we can
@@ -291,6 +291,6 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		\SimpleSAML\Utils\HTTP::redirectTrustedURL($url, $params);
 
 		/* The previous function never returns, so this code is never executed. */
-		assert('FALSE');
+		assert(FALSE);
 	}
 }
