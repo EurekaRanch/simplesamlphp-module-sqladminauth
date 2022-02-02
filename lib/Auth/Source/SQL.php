@@ -10,6 +10,8 @@ use SimpleSAML\Auth\State as SimpleSAML_Auth_State;
 use \PDO;
 use \PDOException;
 use \SimpleSaml\Logger;
+use SimpleSAML\Error;
+
 /**
  * Example authentication source - username & password.
  *
@@ -137,7 +139,7 @@ class SQL extends UserPassBase {
 	 *
 	 * On a successful login, this function should return the users attributes. On failure,
 	 * it should throw an exception. If the error was caused by the user entering the wrong
-	 * username or password, a SimpleSAML_Error_Error('WRONGUSERPASS') should be thrown.
+	 * username or password, a Error\Error('WRONGUSERPASS') should be thrown.
 	 *
 	 * Note that both the username and the password are UTF-8 encoded.
 	 *
@@ -179,7 +181,7 @@ class SQL extends UserPassBase {
 			/* No rows returned - invalid username */
 			Logger::error('sqlauthAdmin:' . $this->authId .
 				': No rows in result set. Wrong username or sqlauthAdmin is misconfigured.');
-			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+			throw new Error\Error('WRONGUSERPASS');
 		}
 
 		/* Validate stored password hash (must be in first row of resultset) */
@@ -191,13 +193,13 @@ class SQL extends UserPassBase {
 				/* Invalid password */
 				Logger::error('sqlauthAdmin:' . $this->authId .
 					': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
-				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+				throw new Error\Error('WRONGUSERPASS');
 			}
 
 			if ($data[0][$this->required_field] != $this->required_value) {
 				Logger::error('sqlauthAdmin:' . $this->authId .
 					': Required data does not match or sqlauthAdmin is misconfigured.');
-				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
+				throw new Error\Error('WRONGUSERPASS');
 			}
 		}
 
