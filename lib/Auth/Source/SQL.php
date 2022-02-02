@@ -1,19 +1,25 @@
 <?php
 
+declare(strict_types=1);
 
+namespace SimpleSAML\Module\sqladminauth\Auth\Source;
+
+use Exception;
+use SimpleSAML\Module\core\Auth\UserPassBase;
+use SimpleSAML\Auth\State as SimpleSAML_Auth_State;
+use \PDO;
+use \PDOException;
+use \SimpleSaml\Logger;
 /**
- * SQL/password_hash/password_verify authentication source
+ * Example authentication source - username & password.
  *
- * This is an authentication module for authenticating a user against a SQL
- * database. It uses password_verify for validation of passwords against hashed
- * passwords stored in the database. The implementation is based heavily on
- * sqlauth:SQL and sqlauthBcrypt:SQL.
+ * This class is an example authentication source which stores all username/passwords in an array,
+ * and authenticates users against this array.
  *
- * @author Jesper Hvirring Henriksen, Appinux A/S.
- * @package simpleSAMLphp
- * @version $Id$
+ * @package SimpleSAMLphp
  */
-class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase {
+
+class SQL extends UserPassBase {
 
 	/**
 	 * The DSN we should connect to.
@@ -139,7 +145,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 	 * @param string $password	The password the user wrote.
 	 * @return array	Associative array with the users attributes.
 	 */
-	protected function login($username, $password) {
+    protected function login(string $username, string $password): array {
 		assert(is_string($username));
 		assert(is_string($password));
 
@@ -166,12 +172,12 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 			': - Failed to fetch result set: ' . $e->getMessage());
 		}
 
-		SimpleSAML\Logger::info('sqlauthAdmin:' . $this->authId .
+		Logger::info('sqlauthAdmin:' . $this->authId .
 			': Got ' . count($data) . ' rows from database');
 
 		if (count($data) === 0) {
 			/* No rows returned - invalid username */
-			SimpleSAML\Logger::error('sqlauthAdmin:' . $this->authId .
+			Logger::error('sqlauthAdmin:' . $this->authId .
 				': No rows in result set. Wrong username or sqlauthAdmin is misconfigured.');
 			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
 		}
@@ -183,13 +189,13 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		if (!$adminID) {
 			if (!password_verify($password, $password_hash) === true) {
 				/* Invalid password */
-				SimpleSAML\Logger::error('sqlauthAdmin:' . $this->authId .
+				Logger::error('sqlauthAdmin:' . $this->authId .
 					': Hash does not match. Wrong password or sqlauthAdmin is misconfigured.');
 				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
 			}
 
 			if ($data[0][$this->required_field] != $this->required_value) {
-				SimpleSAML\Logger::error('sqlauthAdmin:' . $this->authId .
+				Logger::error('sqlauthAdmin:' . $this->authId .
 					': Required data does not match or sqlauthAdmin is misconfigured.');
 				throw new SimpleSAML_Error_Error('WRONGUSERPASS');
 			}
@@ -229,7 +235,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 			}
 		}
 
-		SimpleSAML\Logger::info('sqlauthAdmin:' . $this->authId .
+		Logger::info('sqlauthAdmin:' . $this->authId .
 			': Attributes: ' . implode(',', array_keys($attributes)));
 
 		return $attributes;
@@ -262,7 +268,7 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		return 0;
 	}
 
-	public function authenticate(&$state) {
+    public function authenticate(array &$state): void {
 		assert(is_array($state));
 
 		/*
@@ -287,9 +293,10 @@ class sspmod_sqladminauth_Auth_Source_SQL extends sspmod_core_Auth_UserPassBase 
 		 * Redirect to the login form. We include the identifier of the saved
 		 * state array as a parameter to the login form.
 		 */
-		$url = SimpleSAML\Module::getModuleURL('core/loginuserpass.php');
+		$url = \SimpleSAML\Module::getModuleURL('core/loginuserpass.php');
 		$params = array('AuthState' => $id);
-		\SimpleSAML\Utils\HTTP::redirectTrustedURL($url, $params);
+		$http = new \SimpleSAML\Utils\HTTP;
+		$http->redirectTrustedURL($url, $params);
 
 		/* The previous function never returns, so this code is never executed. */
 		assert(FALSE);
