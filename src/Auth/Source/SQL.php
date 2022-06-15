@@ -295,7 +295,7 @@ class SQL extends UserPassBase {
 		 * Redirect to the login form. We include the identifier of the saved
 		 * state array as a parameter to the login form.
 		 */
-		$url = \SimpleSAML\Module::getModuleURL('core/loginuserpass.php');
+		$url = \SimpleSAML\Module::getModuleURL('core/loginuserpass');
 		$params = array('AuthState' => $id);
 		$http = new \SimpleSAML\Utils\HTTP;
 		$http->redirectTrustedURL($url, $params);
@@ -303,4 +303,35 @@ class SQL extends UserPassBase {
 		/* The previous function never returns, so this code is never executed. */
 		assert(FALSE);
 	}
+
+	 /**
+     * This page shows a username/password login form, and passes information from it
+     * to the \SimpleSAML\Module\core\Auth\UserPassBase class, which is a generic class for
+     * username/password authentication.
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @return \SimpleSAML\XHTML\Template
+     */
+    public function loginuserpass(Request $request): Template
+    {
+        // Retrieve the authentication state
+        $request->query = $request->request;
+        if (!$request->query->has('AuthState')) {
+            throw new Error\BadRequest('Missing AuthState parameter.');
+        }
+        $authStateId = $request->query->get('AuthState');
+
+        $state = $this->authState::loadState($authStateId, UserPassBase::STAGEID);
+
+        /** @var \SimpleSAML\Module\core\Auth\UserPassBase|null $source */
+        $source = $this->authSource::getById($state[UserPassBase::AUTHID]);
+        if ($source === null) {
+            throw new Exception(
+                'Could not find authentication source with id ' . $state[UserPassBase::AUTHID]
+            );
+        }
+
+        return $this->handleLogin($request, $source, $state);
+    }
+	
 }

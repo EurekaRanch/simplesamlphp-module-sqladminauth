@@ -1,0 +1,9 @@
+sqladminauth-authpage:
+    path:       /authpage
+    defaults:   { _controller: 'SimpleSAML\Module\sqladminauth\Controller\ExampleAuth::authpage' }
+sqladminauth-redirecttest:
+    path:       /redirecttest
+    defaults:   { _controller: 'SimpleSAML\Module\sqladminauth\Controller\ExampleAuth::redirecttest' }
+sqladminauth-resume:
+    path:       /resume
+    defaults:   { _controller: 'SimpleSAML\Module\sqladminauth\Controller\ExampleAuth::resume' }
