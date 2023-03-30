@@ -57,8 +57,7 @@ class SqlAdminAuth
         Configuration $config,
         Session $session
     ) {
-        debug_print_backtrace();
-        exit();
+        
         $this->config = $config;
         $this->session = $session;
     }
