@@ -61,6 +61,9 @@ class SQL extends UserPassBase {
 	 */
 	private $master_password_query;
 
+	private $required_field;
+    	private $required_value;
+
 	/**
 	 * Constructor for this authentication source.
 	 *
